@@ -1,0 +1,194 @@
+
+{{set . "title" "Dashboard"}}
+{{template "header.html" .}}
+
+
+<script>
+    $(document).ready(function () {
+        $("#dashboard").addClass("active");
+
+        const months = moment().months
+        console.log(months)
+        for (let index = 0; index <= months.length; index++) {
+            $('#ghaStatsMonth').append('<option value="' + months[index] + '">' + months[index] + '</option>');
+        }
+
+        $('#ghaStatsTable')
+            .DataTable({
+                serverSide: true,
+                dom: "Bfrt",
+                ajax: "/api/dashboard/gha-stats",
+                processing: true,
+                searching: false,
+                paging: false,
+                columns: [
+                    {
+                        data: 'applicationName',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'environment',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'event',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'count',
+                        searchable: false,
+                        orderable: false
+                    },
+                ],
+            })
+        $('#applicationsTable')
+            .DataTable({
+                serverSide: true,
+                dom: "Bfrtip",
+                ajax: "/api/dashboard",
+                processing: true,
+                searching: false,
+                search: {
+                    return: true,
+                },
+                ordering: false,
+                lengthMenu: [
+                    [10, 25, 50, -1],
+                    [10, 25, 50, 'All'],
+                ],
+                columns: [
+                    {
+                        data: 'id',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'team.name',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'name',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'repository',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'critical',
+                        searchable: false,
+                        orderable: false,
+                    },
+                    {
+                        data: 'high',
+                        searchable: false,
+                        orderable: false,
+                    },
+                    {
+                        data: 'exemptTo',
+                        searchable: false,
+                        render: DataTable.render.datetime('YYYY-MM-DD'),
+                        orderable: false
+                    },
+                    {
+                        data: 'exemptReason',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'requestedByUser',
+                        searchable: false,
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            if (data === null) {
+                                return "";
+                            }
+                            else {
+                                return data.name;
+                            }
+                        }
+                    },
+                    {
+                        data: 'approvedByUser',
+                        searchable: false,
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            if (data === null) {
+                                return "";
+                            }
+                            else {
+                                return data.name;
+                            }
+                        }
+                    },
+                    {
+                        data: 'updatedAt',
+                        searchable: false,
+                        render: DataTable.render.datetime('YYYY-MM-DD HH:mm:ss'),
+                        orderable: false
+                    }
+                ],
+                createdRow: function( row, data, dataIndex ) {
+                    if(data.critical > 0 || data.high > 0) {
+                        $(row).addClass("table-danger")
+                    }
+                }
+            });
+    });
+</script>
+
+{{template "navbar.html" .}}
+
+<div class="container-fluid">
+
+    <h1>Build, Publish, and Deploy</h1>
+    <div class="row text-center">
+        <div class="col-lg-offset-3">
+            <select id="ghaStatsApplication" name="ghaStatsApplication">
+                <option value="-">--Select--</option>
+            </select>
+        </div>
+    </div>
+    <div class="row" style="margin-bottom: 50px">
+        <table class="table" id="ghaStatsTable">
+            <thead>
+            <tr>
+                <th>Application</th>
+                <th>Environment</th>
+                <th>Event</th>
+                <th>Count</th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+
+    <h1>Applications</h1>
+
+    <div class="row">
+        <table class="table" id="applicationsTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Team</th>
+                <th>Name</th>
+                <th>Repository</th>
+                <th>Critical</th>
+                <th>High</th>
+                <th>Exempt To</th>
+                <th>Exempt Reason</th>
+                <th>Requested By</th>
+                <th>Approved By</th>
+                <th>Updated At</th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+{{template "footer.html" .}}

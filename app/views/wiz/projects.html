@@ -1,0 +1,168 @@
+<script>
+
+    $(document).ready(function () {
+        let editor = new $.fn.dataTable.Editor({
+            ajax: {
+                create: {
+                    url: '/api/wiz/projects',
+                    type: "POST",
+                    contentType: "application/json",
+                    data: function ( d ) {
+                        return JSON.stringify( d );
+                    }
+                },
+                edit: {
+                    type: 'PUT',
+                    url: '/api/wiz/projects/_id_',
+                    contentType: "application/json",
+                    data: function ( d ) {
+                        return JSON.stringify( d );
+                    }
+                },
+                remove: {
+                    type: 'DELETE',
+                    url: '/api/wiz/projects/_id_'
+                }
+            },
+            table: "#wizProjectsTable",
+            idSrc: "id",
+            fields: [
+                {
+                    label: "Name:",
+                    name: "name",
+                },
+                {
+                    label: "Project ID:",
+                    name: "projectId",
+                },
+                {
+                    label: "Notes:",
+                    name: "notes",
+                    type: "textarea"
+                }
+            ]
+        })
+            .on( 'preSubmit', function ( e, o, action ) {
+                if ( action !== 'remove' ) {
+                    const projectId = this.field( 'projectId' );
+                    const name = this.field( 'name' );
+
+                    if ( !projectId.val() ) {
+                        projectId.error( 'Project Id must be given' );
+                    }
+
+                    if ( !name.val() ) {
+                        name.error( 'Name must be given' );
+                    }
+
+                    // If any error was reported, cancel the submission so it can be corrected
+                    if ( this.inError() ) {
+                        return false;
+                    }
+                }
+            } );
+
+        // Edit record
+        $('#wizProjectsTable').on('click', 'td.editor-edit', function (e) {
+            e.preventDefault();
+
+            editor.edit($(this).closest('tr'), {
+                title: 'Edit record',
+                buttons: 'Update'
+            });
+        });
+
+        // Delete a record
+        $('#wizProjectsTable').on('click', 'td.editor-delete', function (e) {
+            e.preventDefault();
+
+            editor.remove($(this).closest('tr'), {
+                title: 'Delete record',
+                message: 'Are you sure you wish to remove this record?',
+                buttons: 'Delete'
+            });
+        });
+
+        $('#wizProjectsTable')
+            .DataTable({
+                serverSide: true,
+                dom: "Bfrtip",
+                ajax: "/api/wiz/projects",
+                processing: true,
+                searching: false,
+                search: {
+                    return: true,
+                },
+                ordering: false,
+                lengthMenu: [
+                    [10, 25, 50, -1],
+                    [10, 25, 50, 'All'],
+                ],
+                columns: [
+                    {
+                        data: 'id',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'name',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'projectId',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'notes',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'updatedAt',
+                        searchable: false,
+                        render: DataTable.render.datetime('YYYY-MM-DD HH:mm:ss'),
+                        orderable: false
+                    },
+                    {
+                        data: null,
+                        className: "dt-center editor-edit",
+                        defaultContent: '<i class="fa fa-pencil"/>',
+                        orderable: false
+                    },
+                    {
+                        data: null,
+                        className: "dt-center editor-delete",
+                        defaultContent: '<i class="fa fa-trash"/>',
+                        orderable: false
+                    }
+                ],
+                select: {
+                    style: 'os',
+                    selector: 'td:first-child'
+                },
+                buttons: [
+                    {extend: "create", editor: editor}
+                ]
+            });
+    });
+</script>
+
+<div class="container-fluid">
+    <h1>Wiz Projects</h1>
+
+    <table class="table" id="wizProjectsTable">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Project Id</th>
+            <th>Notes</th>
+            <th>Updated At</th>
+            <th></th>
+            <th></th>
+        </tr>
+        </thead>
+    </table>
+</div>

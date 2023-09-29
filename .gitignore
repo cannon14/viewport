@@ -1,0 +1,7 @@
+test-results/
+tmp/
+routes/
+.DS_Store
+.idea
+/log
+target/app/test/

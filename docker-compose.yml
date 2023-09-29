@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+#  app:
+#    image: viewport:local
+#    depends_on:
+#      - db
+#    environment:
+#      DB_HOST: db
+#      DB_NAME: travel
+#      DB_USER: travel
+#      DB_PASSWORD: travel
+#    ports:
+#      - "9000:9000"
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: travel
+      POSTGRES_USER: travel
+      POSTGRES_PASSWORD: travel
+      POSTGRES_SCHEMAS: viewport
+    ports:
+      - "5432:5432"

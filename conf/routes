@@ -1,0 +1,70 @@
+# Routes Config
+#
+# This file defines all application routes (Higher priority routes first)
+#
+
+module:testrunner
+# module:jobs
+GET     /health                                 App.Health
+
+GET     /login                                  Auth.Login
+GET     /logout                                  Auth.Logout
+GET     /callback                               Auth.Callback
+
+GET     /                                       Dashboard.Index
+GET     /aws-accounts                              AwsAccount.Index
+GET     /teams                                      Team.Index
+GET     /users                                   User.Index
+GET     /wiz                                        WizData.Index
+GET     /applications                            Application.Index
+GET     /gha-history                            GhaHistory.Index
+
+GET     /api/dashboard                             DashboardApi.GetAll
+GET     /api/dashboard/gha-stats                   DashboardApi.GhaStats
+
+GET     /api/aws-accounts                           AwsAccountApi.GetAll
+POST    /api/aws-accounts                           AwsAccountApi.Create
+GET     /api/aws-accounts/:id                       AwsAccountApi.GetById
+PUT     /api/aws-accounts/:id                       AwsAccountApi.Update
+DELETE  /api/aws-accounts/:id                       AwsAccountApi.Delete
+
+GET     /api/teams                                   TeamsApi.GetAll
+POST    /api/teams                                   TeamsApi.Create
+GET     /api/teams/:id                               TeamsApi.GetById
+PUT     /api/teams/:id                               TeamsApi.Update
+DELETE  /api/teams/:id                               TeamsApi.Delete
+
+GET     /api/users                                   UsersApi.GetAll
+POST    /api/users                                   UsersApi.Create
+GET     /api/users/:id                               UsersApi.GetById
+PUT     /api/users/:id                               UsersApi.Update
+DELETE  /api/users/:id                               UsersApi.Delete
+
+GET     /api/applications/status                     ApplicationsApi.Status
+GET     /api/applications/vulnerability-status       ApplicationsApi.GetVulnerabilityStatus
+
+GET     /api/applications                            ApplicationsApi.GetAll
+POST    /api/applications                            ApplicationsApi.Create
+GET     /api/applications/:id                        ApplicationsApi.GetById
+PUT     /api/applications/:id                        ApplicationsApi.Update
+DELETE  /api/applications/:id                        ApplicationsApi.Delete
+
+GET     /api/gha-history                            GhaHistoryApi.GetAll
+POST    /api/gha-history                            GhaHistoryApi.Create
+DELETE  /api/gha-history/:id                        GhaHistoryApi.Delete
+
+# Ignore favicon requests
+GET     /favicon.ico                            404
+
+# Map static resources from the /app/public folder to the /public path
+GET     /public/*filepath                       Static.Serve("public")
+
+# Catch all, this will route any request into the controller path
+#
+#                    **** WARNING ****
+# Enabling this exposes any controller and function to the web.
+# ** This is a serious security issue if used online **
+#
+# For rapid development uncomment the following to add new controller.action endpoints
+# without having to add them to the routes table.
+# *       /:controller/:action                    :controller.:action

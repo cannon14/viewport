@@ -1,0 +1,220 @@
+<script>
+
+    $(document).ready(function () {
+
+        let editor
+        let project_options = []
+
+        $.getJSON("/api/wiz/projects", function (data) {
+                let option = {};
+                $.each(data.data, function (i, e) {
+                    option.label = e.name;
+                    option.value = e.id;
+                    project_options.push(option);
+                    option = {};
+                });
+            }
+        ).done(function () {
+            editor.field('projectId').update(project_options);
+        });
+
+        editor = new $.fn.dataTable.Editor({
+            ajax: {
+                create: {
+                    url: '/api/wiz/subscriptions',
+                    type: "POST",
+                    contentType: "application/json",
+                    data: function ( d ) {
+                        return JSON.stringify( d );
+                    }
+                },
+                edit: {
+                    type: 'PUT',
+                    url: '/api/wiz/subscriptions/_id_',
+                    contentType: "application/json",
+                    data: function ( d ) {
+                        return JSON.stringify( d );
+                    }
+                },
+                remove: {
+                    type: 'DELETE',
+                    url: '/api/wiz/subscriptions/_id_'
+                }
+            },
+            table: "#wizSubscriptionsTable",
+            idSrc: "id",
+            fields: [
+                {
+                    label: "Name:",
+                    name: "name",
+                },
+                {
+                    label: "Environment:",
+                    name: "environment",
+                    type: "select",
+                    options: [
+                        "development",
+                        "staging",
+                        "production"
+                    ]
+                },
+                {
+                    label: "Project:",
+                    name: "projectId",
+                    type: "select",
+                },
+                {
+                    label: "Subscription ID:",
+                    name: "subscriptionId",
+                },
+                {
+                    label: "Notes:",
+                    name: "notes",
+                    type: "textarea"
+                }
+            ]
+        })
+            .on( 'preSubmit', function ( e, o, action ) {
+                if ( action !== 'remove' ) {
+                    const subscriptionId = this.field( 'subscriptionId' );
+                    const name = this.field( 'name' );
+
+                    if ( !subscriptionId.val() ) {
+                        subscriptionId.error( 'Subscription Id must be given' );
+                    }
+
+                    if ( !name.val() ) {
+                        name.error( 'Name must be given' );
+                    }
+
+                    // If any error was reported, cancel the submission so it can be corrected
+                    if ( this.inError() ) {
+                        return false;
+                    }
+                }
+            } );
+
+        // Edit record
+        $('#wizSubscriptionsTable').on('click', 'td.editor-edit', function (e) {
+            e.preventDefault();
+
+            editor.edit($(this).closest('tr'), {
+                title: 'Edit record',
+                buttons: 'Update'
+            });
+        });
+
+        // Delete a record
+        $('#wizSubscriptionsTable').on('click', 'td.editor-delete', function (e) {
+            e.preventDefault();
+
+            editor.remove($(this).closest('tr'), {
+                title: 'Delete record',
+                message: 'Are you sure you wish to remove this record?',
+                buttons: 'Delete'
+            });
+        });
+
+        $('#wizSubscriptionsTable')
+            .DataTable({
+                serverSide: true,
+                dom: "Bfrtip",
+                ajax: "/api/wiz/subscriptions",
+                processing: true,
+                searching: false,
+                search: {
+                    return: true,
+                },
+                ordering: false,
+                lengthMenu: [
+                    [10, 25, 50, -1],
+                    [10, 25, 50, 'All'],
+                ],
+                columns: [
+                    {
+                        data: 'id',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'name',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'environment',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'project.name',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'subscriptionId',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'notes',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'updatedAt',
+                        searchable: false,
+                        render: DataTable.render.datetime('YYYY-MM-DD HH:mm:ss'),
+                        orderable: false
+                    },
+                    {
+                        data: null,
+                        className: "dt-center editor-edit",
+                        defaultContent: '<i class="fa fa-pencil"/>',
+                        orderable: false
+                    },
+                    {
+                        data: null,
+                        className: "dt-center editor-delete",
+                        defaultContent: '<i class="fa fa-trash"/>',
+                        orderable: false
+                    },
+                    {
+                        data: 'subscriptionId',
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            return '<a href="https://app.wiz.io/issues#~(groupBy~\'resource~filters~(cloudAccount~(equals~(~\''+data+'))~severity~(equals~(~\'CRITICAL~\'HIGH))~securityFrameworkSelection~(equals~(~\'35af5625-f4ad-4988-8d4b-1c1fd512e69c))))" target="_blank" rel="noopener noreferrer">Wiz</a>';
+                        }
+                    }
+                ],
+                select: {
+                    style: 'os',
+                    selector: 'td:first-child'
+                },
+                buttons: [
+                    {extend: "create", editor: editor}
+                ]
+            });
+    });
+</script>
+
+<div class="container-fluid" style="padding-top:25px">
+    <h1>Wiz Subscriptions</h1>
+
+    <table class="table" id="wizSubscriptionsTable">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Environment</th>
+            <th>Project</th>
+            <th>Subscription Id</th>
+            <th>Notes</th>
+            <th>Updated At</th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+        </thead>
+    </table>
+</div>

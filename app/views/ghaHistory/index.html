@@ -1,0 +1,213 @@
+{{set . "title" "GHA History"}}
+{{template "header.html" .}}
+
+<script>
+    let editor;
+
+    $(document).ready(function () {
+        $("#filterForm").hide();
+        $("#gha-history").addClass("active")
+
+        editor = new $.fn.dataTable.Editor({
+            ajax: {
+                remove: {
+                    type: 'DELETE',
+                    url: '/api/gha-history/_id_'
+                }
+            },
+            table: "#ghaHistoryTable",
+            idSrc: "id",
+        });
+
+        // Delete a record
+        $('#ghaHistoryTable').on('click', 'td.editor-delete', function (e) {
+            e.preventDefault();
+
+            editor.remove( $(this).closest('tr'), {
+                title: 'Delete record',
+                message: 'Are you sure you wish to remove this record?',
+                buttons: 'Delete'
+            } );
+        } );
+
+        let table = $('#ghaHistoryTable')
+            .DataTable({
+                serverSide: true,
+                processing: true,
+                dom: "Blfrtip",
+                buttons: [
+                    'copy', 'csv', 'print'
+                ],
+                ajax: {
+                    url: "/api/gha-history",
+                    data: function(d) {
+                        d.applicationName = $("#applicationFilter").val()
+                        d.environment = $("#environmentFilter").val()
+                        d.event = $("#eventFilter").val()
+                        d.reference = $("#referenceFilter").val()
+                        d.status = $("#statusFilter").val()
+                        d.actor = $("#actorFilter").val()
+                        d.from = $("#fromFilter").val()
+                        d.to = $("#toFilter").val()
+                    },
+                },
+                searching: false,
+                ordering: false,
+                paging: true,
+                pagingType: 'full_numbers',
+                lengthMenu: [
+                    [25, 50, 100],
+                    [25, 50, 100],
+                ],
+                columns: [
+                    {
+                        data: 'id',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'applicationName',
+                    },
+                    {
+                        data: 'environment',
+                    },
+                    {
+                        data: 'event',
+                    },
+                    {
+                        data: 'reference',
+                    },
+                    {
+                        data: 'status',
+                    },
+                    {
+                        data: 'actor',
+                    },
+                    {
+                        data: 'timestamp',
+                        searchable: false,
+                        render: DataTable.render.datetime( 'YYYY-MM-DD HH:mm:ss' ),
+                    },
+                    {
+                        data: null,
+                        className: "dt-center editor-delete",
+                        defaultContent: '<i class="fa fa-trash"></i>',
+                        orderable: false,
+                        searchable: false
+                    }
+                ],
+                select: {
+                    style: 'os',
+                    selector: 'td:first-child'
+                },
+            });
+
+        $('#applyFilters').click(function () {
+            table.ajax.reload();
+        } );
+
+        $("#filterToggle").click(function(){
+            $("#filterForm").toggle('slow');
+        });
+
+        $("#clearFilters").click(function(){
+            $("form#filterForm :input").each(function(){
+                $(this).val("") // This is the jquery object of the input, do what you will
+            });
+        });
+    });
+</script>
+
+{{template "navbar.html" .}}
+
+<div class="container-fluid">
+
+    <h1>GHA History</h1>
+
+    <div style="padding-bottom:25px">
+    <button class="btn btn-primary" id="filterToggle">Filter</button>
+    <form id="filterForm">
+        <div class="row mb-3">
+            <label for="applicationFilter" class="col-sm-2 col-form-label">Application</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="applicationFilter">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="environmentFilter" class="col-sm-2 col-form-label">Environment</label>
+            <div class="col-sm-10">
+                <select id="environmentFilter" class="form-select">
+                    <option value="">--Select--</option>
+                    <option value="development">development</option>
+                    <option value="staging">staging</option>
+                    <option value="production">production</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="eventFilter" class="col-sm-2 col-form-label">Event</label>
+            <div class="col-sm-10">
+                <input type="text" class="filter form-control" id="eventFilter">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="referenceFilter" class="col-sm-2 col-form-label">Reference</label>
+            <div class="col-sm-10">
+                <input type="text" class="filter form-control" id="referenceFilter">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="statusFilter" class="col-sm-2 col-form-label">Status</label>
+            <div class="col-sm-10">
+                <input type="text" class="filter form-control" id="statusFilter">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="actorFilter" class="col-sm-2 col-form-label">Actor</label>
+            <div class="col-sm-10">
+                <input type="text" class="filter form-control" id="actorFilter">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="fromFilter" class="col-sm-2 col-form-label">From</label>
+            <div class="col-sm-10">
+                <input type="text" class="filter form-control"
+                       id="fromFilter" placeholder="yyyy-MM-dd HH:mm:ss">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label for="toFilter" class="col-sm-2 col-form-label">To</label>
+            <div class="col-sm-10">
+                <input type="text" class="filter form-control"
+                       id="toFilter" placeholder="yyyy-MM-dd HH:mm:ss">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-sm-5">
+                <button type="button" class="btn btn-danger" id="clearFilters">Clear</button>
+            </div>
+            <div class="col-sm-5">
+                <button type="button" class="btn btn-primary" id="applyFilters">Apply</button>
+            </div>
+        </div>
+
+    </form>
+    </div>
+    <table class="table" id="ghaHistoryTable">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Application</th>
+            <th>Environment</th>
+            <th>Event</th>
+            <th>Reference</th>
+            <th>Status</th>
+            <th>Actor</th>
+            <th>Timestamp</th>
+            <th></th>
+        </tr>
+        </thead>
+    </table>
+</div><!--Container-->
+
+{{template "footer.html" .}}

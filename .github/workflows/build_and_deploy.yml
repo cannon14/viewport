@@ -1,0 +1,86 @@
+name: "Build, Publish, and Deploy"
+
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - '*'
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: "Select Environment"
+        required: true
+        options:
+          - production
+
+env:
+  SERVICE: viewport
+  AWS_REGION: us-east-1
+  CLUSTER: production
+  PLATFORM_ARCHITECTURE: linux/arm64
+  LANGUAGE: golang
+  LANGUAGE_VERSION: 1.19
+
+jobs:
+  set-env:
+    runs-on: ubuntu-latest
+    outputs:
+      service: ${{ steps.set-env.outputs.service }}
+      aws_region: ${{ steps.set-env.outputs.aws_region }}
+      platform_architecture: ${{ steps.set-env.outputs.platform_architecture }}
+      language: ${{ steps.set-env.outputs.language }}
+      language_version: ${{ steps.set-env.outputs.language_version }}
+      cluster: ${{ steps.set-env.outputs.cluster }}
+      gha_role_arn: ${{ vars.GHA_ROLE_ARN }}
+    steps:
+      - id: set-env
+        run: |
+          echo "service=$SERVICE" >> $GITHUB_OUTPUT
+          echo "aws_region=$AWS_REGION" >> $GITHUB_OUTPUT
+          echo "platform_architecture=$PLATFORM_ARCHITECTURE" >> $GITHUB_OUTPUT
+          echo "language=$LANGUAGE" >> $GITHUB_OUTPUT
+          echo "language_version=$LANGUAGE_VERSION" >> $GITHUB_OUTPUT    
+          echo "cluster=$CLUSTER" >> $GITHUB_OUTPUT 
+          echo "gha_role_arn=${{ vars.GHA_ROLE_ARN }}" >> $GITHUB_OUTPUT
+
+  build:
+    if: github.event_name != 'workflow_dispatch'
+    needs: [set-env]
+    uses: RedVentures/travel-actions-ecs/.github/workflows/ecs-build.yml@v2
+    secrets: inherit
+    with:
+      service: ${{ needs.set-env.outputs.service }}
+      platform_architecture: ${{ needs.set-env.outputs.platform_architecture }}
+      slack_enabled: true
+      persist: ${{ github.event_name != 'workflow_dispatch' && github.event_name == 'push' && contains(github.ref, 'refs/tags/') }}
+
+  publish:
+    if: github.event_name != 'workflow_dispatch' && github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    needs: [set-env, build]
+    uses: RedVentures/travel-actions-ecs/.github/workflows/ecr-publish.yml@v2
+    secrets: inherit
+    with:
+      service: ${{ needs.set-env.outputs.service }}
+      environment: production
+      tag: ${{ github.ref_name }}
+      aws_region: ${{ needs.set-env.outputs.aws_region }}
+      image_name: ${{ needs.build.outputs.image}}
+      slack_enabled: true
+      gha_role_arn: ${{ needs.set-env.outputs.gha_role_arn }}
+
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    needs: [set-env]
+    uses: RedVentures/travel-actions-ecs/.github/workflows/ecs-deploy.yml@v2
+    secrets: inherit
+    with:
+      service: ${{ needs.set-env.outputs.service }}
+      tag: ${{ github.ref_name }}
+      aws_region: ${{ needs.set-env.outputs.aws_region }}
+      environment: production
+      cluster: ${{ needs.set-env.outputs.cluster }}
+      slack_enabled: true
+      gha_role_arn: ${{ needs.set-env.outputs.gha_role_arn }}

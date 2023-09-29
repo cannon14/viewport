@@ -1,0 +1,289 @@
+{{set . "title" "Applications"}}
+{{template "header.html" .}}
+
+<script>
+
+    let editor;
+    let user_options = [{label: "--select--", value: 0}];
+    let team_options = []
+
+    $(document).ready(function () {
+        $("#applications").addClass("active")
+
+        $.getJSON("/api/teams", function (data) {
+                let option = {};
+                $.each(data.data, function (i, e) {
+                    option.label = e.name;
+                    option.value = e.id;
+                    team_options.push(option);
+                    option = {};
+                });
+            }
+        ).done(function () {
+            editor.field('teamId').update(team_options);
+        });
+
+
+        $.getJSON("/api/users", function (data) {
+                let option = {};
+                $.each(data.data, function (i, e) {
+                    option.label = e.name;
+                    option.value = e.id;
+                    user_options.push(option);
+                    option = {};
+                });
+            }
+        ).done(function () {
+            editor.field('requestedBy').update(user_options);
+            editor.field('approvedBy').update(user_options);
+
+        });
+
+        editor = new $.fn.dataTable.Editor({
+            ajax: {
+                create: {
+                    url: '/api/applications',
+                    type: 'POST',
+                    contentType: "application/json",
+                    data: function (d) {
+                        return JSON.stringify(d);
+                    }
+                }, // default method is POST
+                edit: {
+                    type: 'PUT',
+                    url: '/api/applications/_id_',
+                    contentType: "application/json",
+                    data: function (d) {
+                        return JSON.stringify(d);
+                    }
+                },
+                remove: {
+                    type: 'DELETE',
+                    url: '/api/applications/_id_'
+                }
+            },
+            table: "#applicationsTable",
+            idSrc: "id",
+            fields: [
+                {
+                    label: "Team:",
+                    name: "teamId",
+                    type: "select"
+                },
+                {
+                    label: "Name:",
+                    name: "name"
+                },
+                {
+                    label: "Slug:",
+                    name: "slug"
+                },
+                {
+                    label: "Repository:",
+                    name: "repository",
+                },
+                {
+                    label: "Exempt To:",
+                    name: "exemptTo",
+                    type: 'datetime',
+                    def: function () {
+                        return new Date();
+                    },
+                    format: 'YYYY-MM-DD',
+                    displayFormat: 'YYYY-MM-DD'
+                },
+                {
+                    label: "Exempt Reason:",
+                    name: "exemptReason",
+                    type: 'textarea'
+                },
+                {
+                    label: "Requested By:",
+                    name: "requestedBy",
+                    type: "select",
+                    options: []
+                },
+                {
+                    label: "Approved By:",
+                    name: "approvedBy",
+                    type: "select",
+                    options: []
+                }
+            ]
+        });
+
+        // Edit record
+        $('#applicationsTable').on('click', 'td.editor-edit', function (e) {
+            e.preventDefault();
+
+            editor.edit($(this).closest('tr'), {
+                title: 'Edit record',
+                buttons: 'Update'
+            });
+        });
+
+        // Delete a record
+        $('#applicationsTable').on('click', 'td.editor-delete', function (e) {
+            e.preventDefault();
+
+            editor.remove($(this).closest('tr'), {
+                title: 'Delete record',
+                message: 'Are you sure you wish to remove this record?',
+                buttons: 'Delete'
+            });
+        });
+
+        $('#applicationsTable')
+            .DataTable({
+                serverSide: true,
+                dom: "Bfrtip",
+                ajax: "/api/applications",
+                processing: true,
+                searching: false,
+                search: {
+                    return: true,
+                },
+                ordering: false,
+                lengthMenu: [
+                    [10, 25, 50, -1],
+                    [10, 25, 50, 'All'],
+                ],
+                columns: [
+                    {
+                        data: 'id',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'team.name',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'name',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'slug',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'repository',
+                        searchable: false,
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            return '<a href="' + data + '"  target="_blank">' + data + '</a>';
+                        }
+                    },
+                    {
+                        data: 'critical',
+                        searchable: false,
+                        orderable: false,
+                    },
+                    {
+                        data: 'high',
+                        searchable: false,
+                        orderable: false,
+                    },
+                    {
+                        data: 'exemptTo',
+                        searchable: false,
+                        orderable: false,
+                        render: DataTable.render.datetime('YYYY-MM-DD'),
+
+                    },
+                    {
+                        data: 'exemptReason',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'requestedByUser',
+                        searchable: false,
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            if (data === null) {
+                                return "";
+                            }
+                            else {
+                                return data.name;
+                            }
+                        }
+                    },
+                    {
+                        data: 'approvedByUser',
+                        searchable: false,
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            if (data === null) {
+                                return "";
+                            }
+                            else {
+                                return data.name;
+                            }
+                        }
+                    },
+                    {
+                        data: 'updatedAt',
+                        searchable: false,
+                        orderable: false,
+                        render: DataTable.render.datetime('YYYY-MM-DD HH:mm:ss'),
+
+                    },
+                    {
+                        data: null,
+                        className: "dt-center editor-edit",
+                        defaultContent: '<i class="fa fa-pencil"/>',
+                        orderable: false
+                    },
+                    {
+                        data: null,
+                        className: "dt-center editor-delete",
+                        defaultContent: '<i class="fa fa-trash"/>',
+                        orderable: false
+                    }
+                ],
+                select: {
+                    style: 'os',
+                    selector: 'td:first-child'
+                },
+                buttons: [
+                    {extend: "create", editor: editor}
+                ]
+            });
+    });
+</script>
+
+{{template "navbar.html" .}}
+
+<div class="container-fluid">
+
+    <h1>Applications</h1>
+
+    <div class="row">
+        <table class="table" id="applicationsTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Team</th>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Repository</th>
+                <th>Critical</th>
+                <th>High</th>
+                <th>Exempt To</th>
+                <th>Exempt Reason</th>
+                <th>Requested By</th>
+                <th>Approved By</th>
+                <th>Updated At</th>
+                <th></th>
+                <th></th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+{{template "footer.html" .}}
